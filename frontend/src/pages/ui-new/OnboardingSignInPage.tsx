@@ -67,7 +67,8 @@ export function OnboardingSignInPage() {
   const { t } = useTranslation('common');
   const { theme } = useTheme();
   const posthog = usePostHog();
-  const { config, loginStatus, loading, updateAndSaveConfig } = useUserSystem();
+  const { config, loginStatus, loading, updateAndSaveConfig, sharedApiBase } =
+    useUserSystem();
   const setSelectedOrgId = useOrganizationStore((s) => s.setSelectedOrgId);
 
   const [showComparison, setShowComparison] = useState(false);
@@ -190,6 +191,10 @@ export function OnboardingSignInPage() {
         <p className="text-low">Loading...</p>
       </div>
     );
+  }
+
+  if (!sharedApiBase) {
+    return <Navigate to="/workspaces/create" replace />;
   }
 
   if (

@@ -7,7 +7,7 @@ import { useOrganizationStore } from '@/stores/useOrganizationStore';
 const DEFAULT_DESTINATION = '/workspaces/create';
 
 export function RootRedirectPage() {
-  const { config, loading, loginStatus } = useUserSystem();
+  const { config, loading, loginStatus, sharedApiBase } = useUserSystem();
   const setSelectedOrgId = useOrganizationStore((s) => s.setSelectedOrgId);
   const [destination, setDestination] = useState<string | null>(null);
 
@@ -20,7 +20,8 @@ export function RootRedirectPage() {
       }
 
       if (!config.remote_onboarding_acknowledged) {
-        setDestination('/onboarding');
+        // In local-only mode (no remote API), skip cloud onboarding entirely.
+        setDestination(sharedApiBase ? '/onboarding' : DEFAULT_DESTINATION);
         return;
       }
 
@@ -43,7 +44,7 @@ export function RootRedirectPage() {
     return () => {
       cancelled = true;
     };
-  }, [config, loading, loginStatus?.status, setSelectedOrgId]);
+  }, [config, loading, loginStatus?.status, setSelectedOrgId, sharedApiBase]);
 
   if (loading || !config || !destination) {
     return (
