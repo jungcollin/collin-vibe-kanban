@@ -101,9 +101,11 @@ async fn main() -> Result<(), VibeKanbanError> {
             cleaned.trim().parse::<u16>().ok()
         })
         .unwrap_or_else(|| {
-            tracing::info!("No PORT environment variable set, using port 0 for auto-assignment");
-            0
-        }); // Use 0 to find free port if no specific port provided
+            tracing::info!(
+                "No BACKEND_PORT/PORT environment variable set, using default port 4050"
+            );
+            4050
+        });
 
     let proxy_port = std::env::var("PREVIEW_PROXY_PORT")
         .ok()

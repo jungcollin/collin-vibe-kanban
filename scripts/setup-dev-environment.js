@@ -7,6 +7,9 @@ const net = require("net");
 const PORTS_FILE = path.join(__dirname, "..", ".dev-ports.json");
 const DEV_ASSETS_SEED = path.join(__dirname, "..", "dev_assets_seed");
 const DEV_ASSETS = path.join(__dirname, "..", "dev_assets");
+const FIXED_FRONTEND_PORT = 4051;
+const FIXED_BACKEND_PORT = 4050;
+const PREVIEW_PROXY_START_PORT = 4052;
 
 /**
  * Check if a port is available
@@ -25,9 +28,9 @@ function isPortAvailable(port) {
 /**
  * Find a free port starting from a given port
  */
-async function findFreePort(startPort = 3000) {
+async function findFreePort(startPort = PREVIEW_PROXY_START_PORT, blockedPorts = new Set()) {
   let port = startPort;
-  while (!(await isPortAvailable(port))) {
+  while (blockedPorts.has(port) || !(await isPortAvailable(port))) {
     port++;
     if (port > 65535) {
       throw new Error("No available ports found");
@@ -67,59 +70,75 @@ function savePorts(ports) {
  * Verify that saved ports are still available
  */
 async function verifyPorts(ports) {
-  const frontendAvailable = await isPortAvailable(ports.frontend);
-  const backendAvailable = await isPortAvailable(ports.backend);
+  const hasUniquePorts =
+    new Set([ports.frontend, ports.backend, ports.preview_proxy]).size === 3;
+  const frontendIsFixed = ports.frontend === FIXED_FRONTEND_PORT;
+  const backendIsFixed = ports.backend === FIXED_BACKEND_PORT;
+  const previewProxyInRange = ports.preview_proxy >= PREVIEW_PROXY_START_PORT;
+  const frontendAvailable = await isPortAvailable(FIXED_FRONTEND_PORT);
+  const backendAvailable = await isPortAvailable(FIXED_BACKEND_PORT);
   const previewProxyAvailable = await isPortAvailable(ports.preview_proxy);
 
-  if (process.argv[2] === "get" && (!frontendAvailable || !backendAvailable || !previewProxyAvailable)) {
+  if (
+    process.argv[2] === "get" &&
+    (!frontendIsFixed ||
+      !frontendAvailable ||
+      !backendAvailable ||
+      !previewProxyAvailable ||
+      !previewProxyInRange ||
+      !hasUniquePorts ||
+      !backendIsFixed)
+  ) {
     console.log(
-      `Port availability check failed: frontend:${ports.frontend}=${frontendAvailable}, backend:${ports.backend}=${backendAvailable}, preview_proxy:${ports.preview_proxy}=${previewProxyAvailable}`
+      `Port check failed: frontend:${ports.frontend}=fixed(${frontendIsFixed}) available(${frontendAvailable}), backend:${ports.backend}=fixed(${backendIsFixed}) available(${backendAvailable}), preview_proxy:${ports.preview_proxy} available(${previewProxyAvailable}) in_range(${previewProxyInRange}), unique=${hasUniquePorts}`
     );
   }
 
-  return frontendAvailable && backendAvailable && previewProxyAvailable;
+  return (
+    frontendIsFixed &&
+    frontendAvailable &&
+    backendAvailable &&
+    previewProxyAvailable &&
+    previewProxyInRange &&
+    hasUniquePorts &&
+    backendIsFixed
+  );
 }
 
 /**
  * Allocate ports for development
  */
 async function allocatePorts() {
-  // If PORT env is set, use it for frontend and PORT+1 for backend
-  if (process.env.PORT) {
-    const frontendPort = parseInt(process.env.PORT, 10);
-    const backendPort = frontendPort + 1;
-    const previewProxyPort = backendPort + 1;
+  const blockedPorts = new Set([FIXED_FRONTEND_PORT, FIXED_BACKEND_PORT]);
 
-    const ports = {
-      frontend: frontendPort,
-      backend: backendPort,
-      preview_proxy: previewProxyPort,
-      timestamp: new Date().toISOString(),
-    };
+  if (!(await isPortAvailable(FIXED_FRONTEND_PORT))) {
+    throw new Error(`Frontend fixed port ${FIXED_FRONTEND_PORT} is already in use`);
+  }
 
-    if (process.argv[2] === "get") {
-      console.log("Using PORT environment variable:");
-      console.log(`Frontend: ${ports.frontend}`);
-      console.log(`Backend: ${ports.backend}`);
-      console.log(`Preview Proxy: ${ports.preview_proxy}`);
-    }
-
-    return ports;
+  if (!(await isPortAvailable(FIXED_BACKEND_PORT))) {
+    throw new Error(`Backend fixed port ${FIXED_BACKEND_PORT} is already in use`);
   }
 
   // Try to load existing ports first
   const existingPorts = loadPorts();
+  const normalizedExistingPorts = existingPorts
+    ? {
+        ...existingPorts,
+        frontend: FIXED_FRONTEND_PORT,
+        backend: FIXED_BACKEND_PORT,
+      }
+    : null;
 
-  if (existingPorts) {
+  if (normalizedExistingPorts) {
     // Verify existing ports are still available
-    if (await verifyPorts(existingPorts)) {
+    if (await verifyPorts(normalizedExistingPorts)) {
       if (process.argv[2] === "get") {
         console.log("Reusing existing dev ports:");
-        console.log(`Frontend: ${existingPorts.frontend}`);
-        console.log(`Backend: ${existingPorts.backend}`);
-        console.log(`Preview Proxy: ${existingPorts.preview_proxy}`);
+        console.log(`Frontend: ${normalizedExistingPorts.frontend}`);
+        console.log(`Backend: ${normalizedExistingPorts.backend}`);
+        console.log(`Preview Proxy: ${normalizedExistingPorts.preview_proxy}`);
       }
-      return existingPorts;
+      return normalizedExistingPorts;
     } else {
       if (process.argv[2] === "get") {
         console.log(
@@ -130,13 +149,11 @@ async function allocatePorts() {
   }
 
   // Find new free ports
-  const frontendPort = await findFreePort(3000);
-  const backendPort = await findFreePort(frontendPort + 1);
-  const previewProxyPort = await findFreePort(backendPort + 1);
+  const previewProxyPort = await findFreePort(PREVIEW_PROXY_START_PORT, blockedPorts);
 
   const ports = {
-    frontend: frontendPort,
-    backend: backendPort,
+    frontend: FIXED_FRONTEND_PORT,
+    backend: FIXED_BACKEND_PORT,
     preview_proxy: previewProxyPort,
     timestamp: new Date().toISOString(),
   };

@@ -27,7 +27,7 @@ Do not manually edit shared/remote-types.ts, instead edit crates/remote/src/bin/
 
 ## Build, Test, and Development Commands
 - Install: `pnpm i`
-- Run dev (frontend + backend with ports auto-assigned): `pnpm run dev`
+- Run dev (frontend fixed to `4051`, backend fixed to `4050`): `pnpm run dev`
 - Backend (watch): `pnpm run backend:dev:watch`
 - Frontend (dev): `pnpm run frontend:dev`
 - Type checks: `pnpm run check` (frontend) and `pnpm run backend:check` (Rust cargo check)
@@ -52,5 +52,5 @@ Do not manually edit shared/remote-types.ts, instead edit crates/remote/src/bin/
 - Frontend: ensure `pnpm run check` and `pnpm run lint` pass. If adding runtime logic, include lightweight tests (e.g., Vitest) in the same directory.
 
 ## Security & Config Tips
-- Use `.env` for local overrides; never commit secrets. Key envs: `FRONTEND_PORT`, `BACKEND_PORT`, `HOST` 
-- Dev ports and assets are managed by `scripts/setup-dev-environment.js`.
+- Use `.env` for local overrides; never commit secrets. Key envs: `FRONTEND_PORT`, `BACKEND_PORT`, `HOST`
+- Dev frontend/backend ports are fixed to `4051`/`4050`; preview port and assets are managed by `scripts/setup-dev-environment.js`.

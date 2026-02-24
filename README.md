@@ -107,9 +107,9 @@ The following environment variables can be configured at build time or runtime:
 |----------|------|---------|-------------|
 | `POSTHOG_API_KEY` | Build-time | Empty | PostHog analytics API key (disables analytics if empty) |
 | `POSTHOG_API_ENDPOINT` | Build-time | Empty | PostHog analytics endpoint (disables analytics if empty) |
-| `PORT` | Runtime | Auto-assign | **Production**: Server port. **Dev**: Frontend port (backend uses PORT+1) |
-| `BACKEND_PORT` | Runtime | `0` (auto-assign) | Backend server port (dev mode only, overrides PORT+1) |
-| `FRONTEND_PORT` | Runtime | `3000` | Frontend dev server port (dev mode only, overrides PORT) |
+| `PORT` | Runtime | Auto-assign | **Production**: Server port. **Dev**: not used by default (`FRONTEND_PORT=4051`, `BACKEND_PORT=4050`) |
+| `BACKEND_PORT` | Runtime | `4050` | Backend server port (dev mode default is fixed to `4050`) |
+| `FRONTEND_PORT` | Runtime | `4051` | Frontend dev server port (dev mode default is fixed to `4051`) |
 | `HOST` | Runtime | `127.0.0.1` | Backend server host |
 | `MCP_HOST` | Runtime | Value of `HOST` | MCP server connection host (use `127.0.0.1` when `HOST=0.0.0.0` on Windows) |
 | `MCP_PORT` | Runtime | Value of `BACKEND_PORT` | MCP server connection port |
